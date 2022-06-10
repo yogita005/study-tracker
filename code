@@ -1,0 +1,257 @@
+"""
+Created on Wed Feb 23 01:26:55 2022
+
+@author: Yogita Jha
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import mysql.connector
+from tkinter import *
+from tkinter import messagebox
+import math
+from tkinter import ttk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
+
+PINK = "#e2979c"
+RED = "#e7305b"
+GREEN = "#9bdeac"
+YELLOW = "#f7f5dd"
+FONT_NAME = "Courier"
+WORK_MIN = 60
+SHORT_BREAK_MIN = 10
+LONG_BREAK_MIN =30
+reps = 0
+timer = None
+counter = 1
+marks=""
+quotes=["Love what you are learning to do", "Today’s studying plants the seeds for tomorrow’s exam success","Stay consistent in your studying"]
+quote=word = random.choice(quotes)
+def count_down(count):
+    count_min = math.floor(count / 60)
+    count_sec = count % 60
+    # Dynamic typing allows for changing the data type of a variable
+    # Just by assigning it to a different kind of value
+    if count_sec < 10:
+        count_sec = f"0{count_sec}"
+    canvas.itemconfig(timer_text, text=f"{count_min}:{count_sec}")
+    if count > 0:
+        global timer
+        timer = window.after(1000, count_down, count - 1)
+    else:
+        start_timer()
+        marks = ""
+        work_sessions = math.floor(reps/2)
+        for _ in range(work_sessions):
+            marks += "✓"
+        check_marks.config(text=marks)
+       
+def start_timer():
+    global reps
+    reps += 1
+    work_sec = WORK_MIN * 60
+    short_break_sec = SHORT_BREAK_MIN * 60
+    long_break_sec = LONG_BREAK_MIN * 60
+    # If it's the 8th rep
+    if reps % 8 == 0:
+        count_down(long_break_sec)
+        title_label.config(text="Break", fg=RED)
+    # If it's the 2nd/4th/6th rep
+    elif reps % 2 == 0:
+        count_down(short_break_sec)
+        title_label.config(text="Break", fg=PINK)
+    # If it's the 1st/3rd/5th/7th rep
+    else:
+        count_down(work_sec)
+        title_label.config(text="Work", fg=GREEN)
+
+def reset_timer():
+    window.after_cancel(timer)
+    canvas.itemconfig(timer_text, text="00:00")
+    title_label.config(text="Timer")
+    check_marks.config(text="")
+    global reps
+    reps = 0
+ 
+
+ 
+def todo_timer():
+    tasks_list = [] 
+    
+    def inputError() :     
+      
+        if enterTaskField.get() == "" : 
+            messagebox.showerror("Input Error") 
+              
+            return 0
+          
+        return 1
+    def clear_taskNumberField() : 
+        taskNumberField.delete(0.0, END)   
+    def clear_taskField() : 
+        enterTaskField.delete(0, END) 
+    def insertTask(): 
+      
+        global counter 
+        value = inputError() 
+        if value == 0 : 
+            return
+        content = enterTaskField.get() + "\n"
+        tasks_list.append(content) 
+        TextArea.insert('end -1 chars', "[ " + str(counter) + " ] " + content) 
+        counter += 1
+        clear_taskField() 
+    def delete() : 
+          
+        global counter 
+          
+        # handling the empty task error 
+        if len(tasks_list) == 0 : 
+            messagebox.showerror("No task") 
+            return
+        number = taskNumberField.get(1.0, END) 
+        if number == "\n" : 
+            messagebox.showerror("input error") 
+            return
+          
+        else : 
+            task_no = int(number) 
+        clear_taskNumberField() 
+        tasks_list.pop(task_no - 1) 
+        counter -= 1
+        TextArea.delete(1.0, END)  
+        for i in range(len(tasks_list)) : 
+            TextArea.insert('end -1 chars', "[ " + str(i + 1) + " ] " + tasks_list[i]) 
+           
+    if __name__ == "__main__" : 
+        gui = Tk() 
+        gui.configure(background = "light green") 
+        gui.title("ToDo App")  
+        gui.geometry("250x300") 
+        enterTask = Label(gui, text = "Enter Your Task", bg = "light pink") 
+        enterTaskField = Entry(gui) 
+        Submit = Button(gui, text = "Submit", fg = "Black", bg = "light pink", command = insertTask) 
+        TextArea = Text(gui, height = 5, width = 25, font = "lucida 13") 
+      
+        taskNumber = Label(gui, text = "Complete Task Number", bg = "light pink") 
+                             
+        taskNumberField = Text(gui, height = 1, width = 2, font = "lucida 13") 
+        delete = Button(gui, text = "Delete", fg = "Black", bg = "light pink", command = delete) 
+        enterTask.grid(row = 0, column = 2) 
+                    
+        enterTaskField.grid(row = 1, column = 2, ipadx = 50) 
+                             
+        Submit.grid(row = 2, column = 2) 
+        TextArea.grid(row = 3, column = 2, padx = 10, sticky = W) 
+                             
+        taskNumber.grid(row = 4, column = 2, pady = 5)       
+        taskNumberField.grid(row = 5, column = 2)                  
+        delete.grid(row = 6, column = 2, pady = 5) 
+        gui.mainloop() 
+
+def open_win():
+    mydb=mysql.connector.connect(host="localhost", user="root",password="Yogita@sql")
+    #CHECKING CONNECTION
+    if mydb.is_connected():
+        print("Successfully connected")
+    else:
+        print("Error in connectivity...")
+    mycursor=mydb.cursor()
+    mydb.close()
+    mydb=mysql.connector.connect(host="localhost", user="root",password="Yogita@sql",database="school")
+    mycursor=mydb.cursor()
+    mycursor.execute("select TotalSessions,TotalTime,ProductivityRating,Date from projects")
+    result = mycursor.fetchall()
+    # fetch all the matching rows 
+    TotalTime = []
+    Dates = []
+    Sessions=[]
+    Productivityrate=[] 
+    # loop through the rows
+    for i in result:
+        print(i)
+        print("\n")   
+        Sessions.append(i[0])
+        TotalTime.append(i[1])
+        Productivityrate.append(i[2])
+        Dates.append(i[3])          
+
+    plt.bar(Dates,TotalTime)
+    plt.ylim(0, 1000)
+    plt.xlabel("Dates")
+    plt.ylabel("Total Time")
+    plt.title("Study Statistics")
+
+       
+      
+def daily_update():
+    mydb=mysql.connector.connect(host="localhost", user="root",password="Yogita@sql")
+    #CHECKING CONNECTION
+    if mydb.is_connected():
+        print("Successfully connected")
+    else:
+        print("Error in connectivity...")
+    mycursor=mydb.cursor()
+    mydb.close()
+    mydb=mysql.connector.connect(host="localhost", user="root",password="Yogita@sql",database="school")
+    mycursor=mydb.cursor()
+    #INSERTING MULTIPLE RECORDS
+    n=int(input("How many records you want to enter?"))
+    for i in range(n):
+          TotalSessions=int(input("Total no. of sessions:"))
+          TotalTime=int(input("Total time of all the sessions:"))
+          ProductivityRating=input("Productivity Rating:")
+          Date=input("Date:")
+          mycursor.execute(
+              "insert into projects(TotalSessions,TotalTime,ProductivityRating,Date)values({},{},'{}','{}')".format(TotalSessions,TotalTime,ProductivityRating,Date))
+    mydb.commit()
+    print("Records inserted")
+    mycursor.execute("select * from projects")
+    result = mycursor.fetchall()
+    for i in mycursor:
+        print(i)
+        print("\n")
+    
+ 
+
+window = Tk()
+window.title("Study Tracker")
+window.config(padx=100, pady=50, bg=YELLOW)
+title_label = Label(text="Study Tracker", fg=GREEN, bg=YELLOW, font=(FONT_NAME, 50))
+title_label.grid(column=1, row=1)
+text = Label(window, text=quote, font=FONT_NAME,anchor=CENTER)
+text.grid(column=1, row=0)
+# Need to check the background colour of the canvas as well
+canvas = Canvas(width=200, height=224, bg=YELLOW, highlightthickness=0)
+# highlightthicknes is used for making the highlight disappear
+tomato_img = PhotoImage(file="tomato.jpg")
+canvas.create_image(100, 112, image=tomato_img)
+timer_text = canvas.create_text(100, 130, text="00:00", fill="white",
+                                font=(FONT_NAME, 35, "bold"))
+canvas.grid(column=1, row=2)
+# x and y values are half of the width and the height
+start_button = Button(window,heigh=10,width=20,text="Start",
+                      bg = "light pink", highlightthickness=0, command= start_timer)
+start_button.grid(column=0, row=2)
+reset_button = Button(window,heigh=10,width=20,text="Reset",
+                      bg="light pink", highlightthickness=0, command = reset_timer)
+reset_button.grid(column=1, row=4)
+  
+check_marks = Label(text="✓", fg="dark green", bg=YELLOW)
+check_marks.grid(column=1, row=3)
+
+todo_button = Button(window,heigh=10,width=20 ,text="To-Do", highlightthickness=0,
+                     bg="light pink",command = todo_timer)
+todo_button.grid(column=2, row=2)
+
+dup_button = Button(window,heigh=10,width=20,text="Daily update",
+                    bg="light green",highlightthickness=0, command = daily_update)
+dup_button.grid(column=2, row=4)
+
+plot_button = Button(window,heigh=10,width=20,text="Statistics"
+                     ,bg="light green", highlightthickness=0, command = open_win)
+plot_button.grid(column=0, row=4)
+
+print (marks)
+window.mainloop()
